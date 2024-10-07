@@ -1,0 +1,62 @@
+[project]
+name = "infernosaurus"
+description = "LLM on YT"
+readme = "README.md"
+keywords = ["yt", "ytsaurus"]
+authors = [
+    {name = "Dmitriy Fedorov"},
+]
+requires-python = ">=3.11"
+license = {text = "Apache 2.0"}
+dynamic = ["version"]
+dependencies = [
+    "ytsaurus-client < 0.14",
+    "ytsaurus-yson < 0.5",
+]
+
+[project.urls]
+Homepage = "https://github.com/dmi-feo/infernosaurus"
+Repository = "https://github.com/dmi-feo/infernosaurus.git"
+Issues = "https://github.com/dmi-feo/infernosaurus/issues"
+Changelog = "https://github.com/dmi-feo/infernosaurus/blob/main/CHANGELOG.md"
+
+[project.optional-dependencies]
+pytest = [
+    "pytest < 9",
+]
+
+tests = [
+    "pytest < 9",
+    "requests < 3",
+]
+release = [
+    "bump-my-version == 0.18.3",
+    "generate-changelog == 0.10.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+
+[tool.setuptools.dynamic]
+version = {attr = "infernosaurus.__version__"}
+
+[tool.bumpversion]
+current_version = "0.0.0"
+commit = true
+commit_args = "--no-verify"
+tag = true
+tag_name = "{new_version}"
+message = "New version: {new_version} [changelog-ignore]"
+allow_dirty = true
+
+[[tool.bumpversion.files]]
+filename = "infernosaurus/__init__.py"
+
+[[tool.bumpversion.files]]
+filename = "CHANGELOG.md"
+search = "Unreleased"
+
+[[tool.bumpversion.files]]
+filename = "CHANGELOG.md"
+search = "{current_version}...HEAD"
+replace = "{current_version}...{new_version}"
