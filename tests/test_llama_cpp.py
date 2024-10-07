@@ -4,6 +4,7 @@ from infernosaurus.llm_operator import LLMOperator
 from infernosaurus import const as c
 from infernosaurus import models
 from infernosaurus.models import LLMRequest
+from infernosaurus.backends.llama_cpp.backend import LlamaCppOffline
 
 
 def test_start_and_stop(yt_with_model):
@@ -101,3 +102,25 @@ def test_with_workers(yt_with_model):
         )
         content = chat_completion.choices[0].message.content
         assert "Amsterdam" in content
+
+
+def test_offline(yt_with_model):
+    yt_cli: yt.YtClient = yt_with_model.get_client(token="topsecret")
+    yt_cli.create("table", "//tmp/my_table")
+    yt_cli.write_table(
+        "//tmp/my_table",
+        [{"name": "one", "value": 1}, {"name": "two", "value": 2}, {"name": "three", "value": 3}]
+    )
+
+    model = LlamaCppOffline(model_path="//tmp/the-model.gguf", resources=models.Resources(
+        server_mem=0, server_cpu=0, worker_num=3, worker_cpu=1, worker_mem=4,
+    ), yt_proxy=yt_with_model.proxy_url_http, yt_token="topsecret")
+
+    model.process(
+        input_table="//tmp/my_table", input_column="value",
+        output_table="//tmp/new_table", output_column="value",
+        prompt="make square of {{value}}. provide the value only.",
+    )
+
+    data = list(yt_cli.read_table("//tmp/new_table"))
+    assert data is None

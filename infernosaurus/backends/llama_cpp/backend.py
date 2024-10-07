@@ -7,6 +7,52 @@ from infernosaurus.llm_backend_base import LLMBackendBase
 from infernosaurus import models
 
 
+YT_CLIENT_CONFIG = {
+    "pickling": {
+        "ignore_system_modules": True,
+    },
+    "is_local_mode": True,  # FIXME
+    "proxy": {
+        "enable_proxy_discovery": False,  # FIXME
+    }
+}
+
+
+class LlamaCppOffline:
+    def __init__(self, yt_proxy: str, yt_token: str, resources: models.Resources, model_path: str):
+        self.resources = resources
+        self.model_path = model_path
+
+        self.yt_client = yt.YtClient(proxy=yt_proxy, token=yt_token, config=YT_CLIENT_CONFIG)
+
+    def process(
+            self, input_table: str, input_column: str, output_table: str, output_column: str,
+            prompt: str,
+    ):
+        infer_script_path = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "infer.py",
+        )
+        model_rel_path = "./" + self.model_path.split("/")[-1]
+
+        op_spec = yt.MapSpecBuilder() \
+            .begin_mapper() \
+                .command(f"python3 ./infer.py --input-column \"{input_column}\" --output-column \"{output_column}\""
+                         f" --prompt \"{prompt}\" --model-path {model_rel_path}") \
+                .format(yt.JsonFormat()) \
+                .docker_image("ghcr.io/dmi-feo/llamosaurus:2") \
+                .memory_limit(self.resources.worker_mem) \
+                .cpu_limit(self.resources.worker_cpu) \
+                .file_paths([self.model_path, yt.LocalFile(infer_script_path)]) \
+            .end_mapper() \
+            .input_table_paths([input_table]) \
+            .output_table_paths([output_table]) \
+            .job_count(self.resources.worker_num) \
+            .stderr_table_path("//tmp/stderr") \
+
+        self.yt_client.run_operation(op_spec)
+
+
 class LlamaCppBackend(LLMBackendBase):
     def get_operation_spec(self):  # TODO: typing
         op_spec = yt.VanillaSpecBuilder()
