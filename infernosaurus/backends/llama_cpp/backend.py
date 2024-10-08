@@ -49,6 +49,7 @@ class LlamaCppOffline:
             .output_table_paths([output_table]) \
             .job_count(self.resources.worker_num) \
             .stderr_table_path("//tmp/stderr") \
+            .max_failed_job_count(1)
 
         self.yt_client.run_operation(op_spec)
 

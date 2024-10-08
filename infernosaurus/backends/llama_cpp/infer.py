@@ -15,7 +15,13 @@ def main():
 
     for line in sys.stdin:
         data = json.loads(line)
-        data[args.output_column] = data[args.input_column]
+        input_row = str(data[args.input_column])
+
+        processed_row = subprocess.check_output(
+            ["/llama/bin/llama-cli", "-m", args.model_path, "-p", args.prompt.replace("{{value}}", input_row), "-n", "64"],
+        )
+
+        data[args.output_column] = processed_row.decode()
         sys.stdout.write(json.dumps(data))
 
 

@@ -109,18 +109,24 @@ def test_offline(yt_with_model):
     yt_cli.create("table", "//tmp/my_table")
     yt_cli.write_table(
         "//tmp/my_table",
-        [{"name": "one", "value": 1}, {"name": "two", "value": 2}, {"name": "three", "value": 3}]
+        [
+            {"number": "one", "country": "Germany"},
+            {"number": "two", "country": "Italy"},
+            {"number": "three", "country": "Spain"},
+        ]
     )
 
     model = LlamaCppOffline(model_path="//tmp/the-model.gguf", resources=models.Resources(
-        server_mem=0, server_cpu=0, worker_num=3, worker_cpu=1, worker_mem=4,
+        server_mem=0, server_cpu=0, worker_num=3, worker_cpu=4, worker_mem=8 * c.GiB,
     ), yt_proxy=yt_with_model.proxy_url_http, yt_token="topsecret")
 
     model.process(
-        input_table="//tmp/my_table", input_column="value",
-        output_table="//tmp/new_table", output_column="value",
-        prompt="make square of {{value}}. provide the value only.",
+        input_table="//tmp/my_table", input_column="country",
+        output_table="//tmp/new_table", output_column="capital",
+        prompt="What is the capital of {{value}}?",
     )
 
     data = list(yt_cli.read_table("//tmp/new_table"))
-    assert data is None
+    assert "Berlin" in data[0]["capital"]
+    assert "Rome" in data[1]["capital"]
+    assert "Madrid" in data[2]["capital"]
