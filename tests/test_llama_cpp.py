@@ -1,18 +1,21 @@
 import yt.wrapper as yt
 
-from infernosaurus.llm_operator import LLMOperator
+from infernosaurus.inference_operator import OnlineInferenceOperator, OfflineInferenceOperator
 from infernosaurus import const as c
 from infernosaurus import models
-from infernosaurus.models import LLMRequest
 from infernosaurus.backends.llama_cpp.backend import LlamaCppOffline
+from infernosaurus.models import OfflineInferenceRequest
 
 
 def test_start_and_stop(yt_with_model):
-    llm = LLMOperator(
-        request=LLMRequest(
-            yt_proxy=yt_with_model.proxy_url_http, yt_token="topsecret",
-            resources=models.Resources(server_mem=10 * c.GiB, server_cpu=1, worker_num=0),
-            model_path="//tmp/the-model.gguf", operation_title="llama's ass"
+    llm = OnlineInferenceOperator(
+        runtime_config=models.OnlineInferenceRuntimeConfig(
+            yt_settings=models.YtSettings(
+                proxy_url=yt_with_model.proxy_url_http, token="topsecret",
+            ),
+            server_resources=models.Resources(mem=10 * c.GiB, cpu=1),
+            model_path="//tmp/the-model.gguf",
+            operation_title="llama's ass"
         ),
         backend_type="llama_cpp",
     )
@@ -33,19 +36,16 @@ def test_start_and_stop(yt_with_model):
 
 
 def test_server_only(yt_with_model):
-    with LLMOperator(
+    with OnlineInferenceOperator(
         backend_type="llama_cpp",
-        request=models.LLMRequest(
-            yt_proxy=yt_with_model.proxy_url_http,
-            yt_token="topsecret",
-            resources=models.Resources(
-                server_mem=10 * c.GiB,
-                server_cpu=1,
-                worker_num=0,
+        runtime_config=models.OnlineInferenceRuntimeConfig(
+            yt_settings=models.YtSettings(
+                proxy_url=yt_with_model.proxy_url_http, token="topsecret",
             ),
+            server_resources=models.Resources(mem=10 * c.GiB, cpu=1),
             model_path="//tmp/the-model.gguf",
         )
-    ).server() as llm:
+    ) as llm:
         openai_client = llm.get_openai_client()
 
         chat_completion = openai_client.chat.completions.create(
@@ -74,21 +74,18 @@ def test_server_only(yt_with_model):
 
 
 def test_with_workers(yt_with_model):
-    with LLMOperator(
-            backend_type="llama_cpp",
-            request=models.LLMRequest(
-                yt_proxy=yt_with_model.proxy_url_http,
-                yt_token="topsecret",
-                resources=models.Resources(
-                    server_mem=3 * c.GiB,
-                    server_cpu=1,
-                    worker_num=3,
-                    worker_cpu=1,
-                    worker_mem=3 * c.GiB,
-                ),
-                model_path="//tmp/the-model.gguf",
-            )
-    ).server() as llm:
+    with OnlineInferenceOperator(
+        backend_type="llama_cpp",
+        runtime_config=models.OnlineInferenceRuntimeConfig(
+            yt_settings=models.YtSettings(
+                proxy_url=yt_with_model.proxy_url_http, token="topsecret",
+            ),
+            server_resources=models.Resources(mem=3 * c.GiB, cpu=1),
+            worker_num=3,
+            worker_resources=models.Resources(mem=3 * c.GiB, cpu=1),
+            model_path="//tmp/the-model.gguf",
+        )
+    ) as llm:
         openai_client = llm.get_openai_client()
 
         chat_completion = openai_client.chat.completions.create(
@@ -113,20 +110,31 @@ def test_offline(yt_with_model):
             {"number": "one", "country": "Germany"},
             {"number": "two", "country": "Italy"},
             {"number": "three", "country": "Spain"},
+            {"number": "four", "country": "France"},
+            {"number": "five", "country": "Armenia"},
+            {"number": "six", "country": "Serbia"},
         ]
     )
 
-    model = LlamaCppOffline(model_path="//tmp/the-model.gguf", resources=models.Resources(
-        server_mem=0, server_cpu=0, worker_num=3, worker_cpu=4, worker_mem=8 * c.GiB,
-    ), yt_proxy=yt_with_model.proxy_url_http, yt_token="topsecret")
-
-    model.process(
+    llm = OfflineInferenceOperator(
+        backend_type="llama_cpp",
+        runtime_config=models.OfflineInferenceRuntimeConfig(
+            yt_settings=models.YtSettings(
+                proxy_url=yt_with_model.proxy_url_http, token="topsecret",
+            ),
+            worker_num=2,
+            worker_resources=models.Resources(cpu=4, mem=8 * c.GiB),
+        )
+    )
+    llm.process(models.OfflineInferenceRequest(
         input_table="//tmp/my_table", input_column="country",
         output_table="//tmp/new_table", output_column="capital",
         prompt="What is the capital of {{value}}?",
-    )
+        model_path="//tmp/the-model.gguf",
+    ))
 
     data = list(yt_cli.read_table("//tmp/new_table"))
-    assert "Berlin" in data[0]["capital"]
-    assert "Rome" in data[1]["capital"]
-    assert "Madrid" in data[2]["capital"]
+
+    true_answers = ("Berlin", "Rome", "Madrid", "Paris", "Yerevan", "Belgrade")
+    for idx, row in enumerate(data):
+        assert true_answers[idx] in row["capital"]
