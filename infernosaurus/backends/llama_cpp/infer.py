@@ -17,6 +17,7 @@ def main():
         data = json.loads(line)
         input_row = str(data[args.input_column])
 
+        # TODO: find a way to initialize llama only once
         processed_row = subprocess.check_output(
             ["/llama/bin/llama-cli", "-m", args.model_path, "-p", args.prompt.replace("{{value}}", input_row), "-n", "64"],
         )
