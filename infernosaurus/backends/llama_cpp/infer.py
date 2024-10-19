@@ -1,7 +1,8 @@
 import argparse
 import json
-import subprocess
 import sys
+
+from llama_cpp import Llama
 
 
 def main():
@@ -13,16 +14,14 @@ def main():
 
     args = parser.parse_args()
 
+    llm = Llama(model_path=args.model_path)
+
     for line in sys.stdin:
         data = json.loads(line)
         input_row = str(data[args.input_column])
-
-        # TODO: find a way to initialize llama only once
-        processed_row = subprocess.check_output(
-            ["/llama/bin/llama-cli", "-m", args.model_path, "-p", args.prompt.replace("{{value}}", input_row), "-n", "64"],
-        )
-
-        data[args.output_column] = processed_row.decode()
+        prepared_prompt = args.prompt.replace("{{value}}", input_row)
+        processed_row = llm.create_completion(prepared_prompt, max_tokens=256, echo=True)["choices"][0]["text"]
+        data[args.output_column] = processed_row
         sys.stdout.write(json.dumps(data))
 
 

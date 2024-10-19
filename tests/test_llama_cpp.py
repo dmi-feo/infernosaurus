@@ -107,12 +107,12 @@ def test_offline(yt_with_model):
     yt_cli.write_table(
         "//tmp/my_table",
         [
-            {"number": "one", "country": "Germany"},
-            {"number": "two", "country": "Italy"},
-            {"number": "three", "country": "Spain"},
-            {"number": "four", "country": "France"},
-            {"number": "five", "country": "Armenia"},
-            {"number": "six", "country": "Serbia"},
+            {"number": "one", "country": "Germany", "true_answer": "Berlin"},
+            {"number": "two", "country": "Italy", "true_answer": "Rome"},
+            {"number": "three", "country": "Spain", "true_answer": "Madrid"},
+            {"number": "four", "country": "France", "true_answer": "Paris"},
+            {"number": "five", "country": "Armenia", "true_answer": "Yerevan"},
+            {"number": "six", "country": "Serbia", "true_answer": "Belgrade"},
         ]
     )
 
@@ -128,13 +128,12 @@ def test_offline(yt_with_model):
     )
     llm.process(models.OfflineInferenceRequest(
         input_table="//tmp/my_table", input_column="country",
-        output_table="//tmp/new_table", output_column="capital",
-        prompt="What is the capital of {{value}}?",
+        output_table="//tmp/new_table", output_column="answer",
+        prompt="Question: What is the capital of {{value}}? Answer:",
         model_path="//tmp/the-model.gguf",
     ))
 
     data = list(yt_cli.read_table("//tmp/new_table"))
 
-    true_answers = ("Berlin", "Rome", "Madrid", "Paris", "Yerevan", "Belgrade")
     for idx, row in enumerate(data):
-        assert true_answers[idx] in row["capital"]
+        assert row["true_answer"] in row["answer"], row

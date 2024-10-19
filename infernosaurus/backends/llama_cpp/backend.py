@@ -31,7 +31,7 @@ class LlamaCppOffline(OfflineInferenceBackendBase):
                 .command(f"python3 ./infer.py --input-column \"{request.input_column}\" --output-column \"{request.output_column}\""
                          f" --prompt \"{request.prompt}\" --model-path {model_rel_path}") \
                 .format(yt.JsonFormat(encode_utf8=False)) \
-                .docker_image("ghcr.io/dmi-feo/llamosaurus:2") \
+                .docker_image("ghcr.io/dmi-feo/llamosaurus:4") \
                 .memory_limit(self.runtime_config.worker_resources.mem) \
                 .cpu_limit(self.runtime_config.worker_resources.cpu) \
                 .file_paths([request.model_path, yt.LocalFile(infer_script_path)]) \
