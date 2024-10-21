@@ -49,5 +49,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: "Git pull"
+        run: git pull
+
       - name: "Set tag"
         run: git tag ${{ steps.tag.outputs.tag }} && git push origin tag ${{ steps.tag.outputs.tag }}
