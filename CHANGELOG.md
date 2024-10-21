@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.3.0 (2024-10-21)
+
+[Compare the full difference.](https://github.com/dmi-feo/infernosaurus/compare/0.2.0...0.3.0)
+
+### Changes
+
+- New version is coming: 0.2.0 (#3). [355d333](https://github.com/dmi-feo/infernosaurus/commit/355d333e26e4411a0ac25799e4bb27b476b9b57f)
+    
+  **co-authored-by:** Bobby Brown Jr <root@localhost>
+
+
 ## 0.2.0 (2024-10-21)
 
 [Compare the full difference.](https://github.com/dmi-feo/infernosaurus/compare/0.1.0...0.2.0)
