@@ -3,8 +3,9 @@ import yt.wrapper as yt
 from infernosaurus.inference_operator import OnlineInferenceOperator, OfflineInferenceOperator
 from infernosaurus import const as c
 from infernosaurus import models
-from infernosaurus.backends.llama_cpp.backend import LlamaCppOffline
-from infernosaurus.models import OfflineInferenceRequest
+
+
+CLIENT_CONFIG_PATCH = {"is_local_mode": True, "proxy": {"enable_proxy_discovery": False}}
 
 
 def test_start_and_stop(yt_with_model):
@@ -12,6 +13,7 @@ def test_start_and_stop(yt_with_model):
         runtime_config=models.OnlineInferenceRuntimeConfig(
             yt_settings=models.YtSettings(
                 proxy_url=yt_with_model.proxy_url_http, token="topsecret",
+                client_config_patch=CLIENT_CONFIG_PATCH,
             ),
             server_resources=models.Resources(mem=10 * c.GiB, cpu=1),
             model_path="//tmp/the-model.gguf",
@@ -41,6 +43,7 @@ def test_server_only(yt_with_model):
         runtime_config=models.OnlineInferenceRuntimeConfig(
             yt_settings=models.YtSettings(
                 proxy_url=yt_with_model.proxy_url_http, token="topsecret",
+                client_config_patch=CLIENT_CONFIG_PATCH,
             ),
             server_resources=models.Resources(mem=10 * c.GiB, cpu=1),
             model_path="//tmp/the-model.gguf",
@@ -79,6 +82,7 @@ def test_with_workers(yt_with_model):
         runtime_config=models.OnlineInferenceRuntimeConfig(
             yt_settings=models.YtSettings(
                 proxy_url=yt_with_model.proxy_url_http, token="topsecret",
+                client_config_patch=CLIENT_CONFIG_PATCH,
             ),
             server_resources=models.Resources(mem=3 * c.GiB, cpu=1),
             worker_num=3,
@@ -121,6 +125,7 @@ def test_offline(yt_with_model):
         runtime_config=models.OfflineInferenceRuntimeConfig(
             yt_settings=models.YtSettings(
                 proxy_url=yt_with_model.proxy_url_http, token="topsecret",
+                client_config_patch=CLIENT_CONFIG_PATCH,
             ),
             worker_num=2,
             worker_resources=models.Resources(cpu=4, mem=8 * c.GiB),

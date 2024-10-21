@@ -14,16 +14,6 @@ from infernosaurus.models import (
     OfflineInferenceRequest,
 )
 
-YT_CLIENT_CONFIG = {
-    "pickling": {
-        "ignore_system_modules": True,
-    },
-    "is_local_mode": True,  # FIXME
-    "proxy": {
-        "enable_proxy_discovery": False,  # FIXME
-    }
-}
-
 
 class OnlineInferenceOperator:
     _backend: OnlineInferenceBackendBase
@@ -32,7 +22,7 @@ class OnlineInferenceOperator:
     def __init__(self, backend_type: str, runtime_config: OnlineInferenceRuntimeConfig):
         self.yt_client = yt.YtClient(
             proxy=runtime_config.yt_settings.proxy_url, token=runtime_config.yt_settings.token,
-            config=YT_CLIENT_CONFIG
+            config=runtime_config.yt_settings.client_config_patch,
         )
 
         self._backend = {
@@ -109,7 +99,7 @@ class OfflineInferenceOperator:
     def __init__(self, backend_type: str, runtime_config: OfflineInferenceRuntimeConfig):
         self.yt_client = yt.YtClient(
             proxy=runtime_config.yt_settings.proxy_url, token=runtime_config.yt_settings.token,
-            config=YT_CLIENT_CONFIG
+            config=runtime_config.yt_settings.client_config_patch,
         )
 
         self._backend = {

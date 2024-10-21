@@ -8,17 +8,6 @@ from infernosaurus import models
 from infernosaurus.utils import quoted as q
 
 
-YT_CLIENT_CONFIG = {
-    "pickling": {
-        "ignore_system_modules": True,
-    },
-    "is_local_mode": True,  # FIXME
-    "proxy": {
-        "enable_proxy_discovery": False,  # FIXME
-    }
-}
-
-
 class LlamaCppOffline(OfflineInferenceBackendBase):
     def get_operation_spec(self, request: models.OfflineInferenceRequest):
         infer_script_path = os.path.join(
