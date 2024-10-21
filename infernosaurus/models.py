@@ -50,3 +50,5 @@ class OfflineInferenceRequest:
     output_column: str = attr.ib()
     model_path: str = attr.ib()
     prompt: str = attr.ib()
+    echo: bool = attr.ib(default=False)
+    max_tokens: int = attr.ib(default=256)

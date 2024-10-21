@@ -130,7 +130,7 @@ def test_offline(yt_with_model):
         input_table="//tmp/my_table", input_column="country",
         output_table="//tmp/new_table", output_column="answer",
         prompt="Question: What is the capital of {{value}}? Answer:",
-        model_path="//tmp/the-model.gguf",
+        model_path="//tmp/the-model.gguf", echo=True,
     ))
 
     data = list(yt_cli.read_table("//tmp/new_table"))

@@ -5,6 +5,7 @@ import yt.wrapper as yt
 
 from infernosaurus.inference_backend_base import OnlineInferenceBackendBase, OfflineInferenceBackendBase
 from infernosaurus import models
+from infernosaurus.utils import quoted as q
 
 
 YT_CLIENT_CONFIG = {
@@ -26,10 +27,16 @@ class LlamaCppOffline(OfflineInferenceBackendBase):
         )
         model_rel_path = "./" + request.model_path.split("/")[-1]
 
+        command = " ".join([
+            "python3", "./infer.py", "--model-path", q(model_rel_path),
+            "--input-column", q(request.input_column), "--output-column", q(request.output_column),
+            "--prompt", q(request.prompt), "--echo" if request.echo else "",
+            "--max-tokens", str(request.max_tokens),
+        ])
+
         op_spec = yt.MapSpecBuilder() \
             .begin_mapper() \
-                .command(f"python3 ./infer.py --input-column \"{request.input_column}\" --output-column \"{request.output_column}\""
-                         f" --prompt \"{request.prompt}\" --model-path {model_rel_path}") \
+                .command(command) \
                 .format(yt.JsonFormat(encode_utf8=False)) \
                 .docker_image("ghcr.io/dmi-feo/llamosaurus:4") \
                 .memory_limit(self.runtime_config.worker_resources.mem) \
