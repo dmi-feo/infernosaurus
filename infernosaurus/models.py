@@ -40,6 +40,13 @@ class OfflineInferenceRuntimeConfig:
     yt_settings: YtSettings = attr.ib()
     worker_num: int = attr.ib()
     worker_resources: Resources = attr.ib()
+    model_worker_num: int = attr.ib(default=0)
+    model_worker_resources: Resources | None = attr.ib(default=None)
+
+    @model_worker_resources.validator
+    def check_is_set(self, attribute, value):
+        if self.model_worker_num > 0 and value is None:
+            raise ValueError("model_worker_resources must be set when model_worker_num > 0")
 
 
 @attr.define

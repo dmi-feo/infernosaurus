@@ -5,23 +5,31 @@ import yt.wrapper as yt
 
 from infernosaurus.inference_backend_base import OnlineInferenceBackendBase, OfflineInferenceBackendBase
 from infernosaurus import models
+from infernosaurus.models import OfflineInferenceRequest
 from infernosaurus.utils import quoted as q
 
 
 class LlamaCppOffline(OfflineInferenceBackendBase):
-    def get_operation_spec(self, request: models.OfflineInferenceRequest):
+    def get_operation_spec(
+            self, request: models.OfflineInferenceRequest, workers_fqdns: list[str]
+    ) -> yt.VanillaSpecBuilder:
         infer_script_path = os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
             "infer.py",
         )
         model_rel_path = "./" + request.model_path.split("/")[-1]
 
-        command = " ".join([
+        command_parts = [
             "python3", "./infer.py", "--model-path", q(model_rel_path),
             "--input-column", q(request.input_column), "--output-column", q(request.output_column),
             "--prompt", q(request.prompt), "--echo" if request.echo else "",
             "--max-tokens", str(request.max_tokens),
-        ])
+        ]
+
+        if len(workers_fqdns) > 0:
+            command_parts.extend(["--worker-fqdns", ",".join(workers_fqdns)])
+
+        command = " ".join(command_parts)
 
         op_spec = yt.MapSpecBuilder() \
             .begin_mapper() \
@@ -40,9 +48,25 @@ class LlamaCppOffline(OfflineInferenceBackendBase):
 
         return op_spec
 
+    def get_workers_operation_spec(self, request: OfflineInferenceRequest) -> yt.VanillaSpecBuilder | None:
+        if self.runtime_config.model_worker_num == 0:
+            return None
+
+        op_spec_builder = yt.VanillaSpecBuilder()
+        return op_spec_builder.begin_task("workers") \
+            .command("/llama/bin/rpc-server --host 0.0.0.0 --port $YT_PORT_0 >&2") \
+            .job_count(self.runtime_config.model_worker_num) \
+            .docker_image("ghcr.io/dmi-feo/llamosaurus:2") \
+            .port_count(1) \
+            .memory_limit(self.runtime_config.model_worker_resources.mem) \
+            .cpu_limit(self.runtime_config.model_worker_resources.cpu) \
+            .end_task() \
+            .stderr_table_path("//tmp/stderr_workers") \
+            .max_failed_job_count(1)
+
 
 class LlamaCppOnline(OnlineInferenceBackendBase):
-    def get_operation_spec(self):  # TODO: typing
+    def get_operation_spec(self) -> yt.VanillaSpecBuilder:
         op_spec = yt.VanillaSpecBuilder()
         op_spec = self._build_server_task(op_spec)
         if self.runtime_config.worker_num > 0:

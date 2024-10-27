@@ -13,10 +13,11 @@ def main():
     parser.add_argument("--model-path")
     parser.add_argument("--max-tokens", type=int)
     parser.add_argument("--echo", action="store_true")
+    parser.add_argument("--worker-fqdns")
 
     args = parser.parse_args()
 
-    llm = Llama(model_path=args.model_path)
+    llm = Llama(model_path=args.model_path, rpc_servers=args.worker_fqdns, n_gpu_layers=-1)
 
     for line in sys.stdin:
         data = json.loads(line)
