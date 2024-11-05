@@ -142,6 +142,7 @@ def test_offline(yt_with_model, model_workers):
         output_table=table_path, output_column="answer",
         prompt="Question: What is the capital of {{value}}? Answer:",
         model_path="//tmp/the-model.gguf", echo=True,
+        inference_parameters=models.InferenceParameters(max_tokens=64, temperature=0.2),
     ))
 
     data = list(yt_cli.read_table(table_path))

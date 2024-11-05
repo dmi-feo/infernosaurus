@@ -26,6 +26,21 @@ class YtSettings:
 
 
 @attr.define
+class InferenceParameters:
+    temperature: float | None = attr.ib(default=None)
+    max_tokens: int | None = attr.ib(default=None)
+
+    def get_params(self) -> dict[str, Any]:
+        params = {}
+        for field in attr.fields_dict(self.__class__):
+            value = getattr(self, field)
+            if value is not None:
+                params[field] = value
+
+        return params
+
+
+@attr.define
 class OnlineInferenceRuntimeConfig:
     yt_settings: YtSettings = attr.ib()
     server_resources: Resources = attr.ib()
@@ -58,4 +73,4 @@ class OfflineInferenceRequest:
     model_path: str = attr.ib()
     prompt: str = attr.ib()
     echo: bool = attr.ib(default=False)
-    max_tokens: int = attr.ib(default=256)
+    inference_parameters: InferenceParameters = attr.ib(factory=InferenceParameters)

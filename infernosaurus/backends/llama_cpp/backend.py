@@ -1,3 +1,4 @@
+import json
 import os.path
 
 import httpx
@@ -23,7 +24,7 @@ class LlamaCppOffline(OfflineInferenceBackendBase):
             "python3", "./infer.py", "--model-path", q(model_rel_path),
             "--input-column", q(request.input_column), "--output-column", q(request.output_column),
             "--prompt", q(request.prompt), "--echo" if request.echo else "",
-            "--max-tokens", str(request.max_tokens),
+            "--inference-params", q(json.dumps(request.inference_parameters.get_params()), qt="'"),
         ]
 
         if len(workers_fqdns) > 0:
