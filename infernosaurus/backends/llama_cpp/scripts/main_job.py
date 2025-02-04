@@ -78,7 +78,7 @@ def main():
         data[args.output_column] = processed_row
         sys.stdout.write(json.dumps(data))
 
-        yt_client.remove(job_node)
+    yt_client.remove(job_node)
 
 
 if __name__ == "__main__":

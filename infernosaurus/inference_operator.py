@@ -1,3 +1,4 @@
+import os
 import time
 from typing import Any
 
@@ -115,6 +116,13 @@ class OfflineInferenceOperator:
     def process(self, request: OfflineInferenceRequest):
         self.yt_client.create("map_node", request.working_dir, ignore_existing=True, recursive=True)
 
+        op_env = {
+            "YT_ALLOW_HTTP_REQUESTS_TO_YT_FROM_JOB": "1",
+            "YT_PROXY": self.yt_client.config["proxy"]["url"],
+        }
+        if (yt_proxy_override := os.environ.get("INSA_OVERRIDE_YT_PROXY")) is not None:
+            op_env["YT_PROXY"] = yt_proxy_override
+
         main_op_params = self._backend.get_main_launch_params(request)
         main_op_spec = (
             yt.MapSpecBuilder()
@@ -125,16 +133,12 @@ class OfflineInferenceOperator:
                 .memory_limit(self.runtime_config.worker_resources.mem)
                 .cpu_limit(self.runtime_config.worker_resources.cpu)
                 .file_paths(main_op_params.local_files + main_op_params.cypress_files)
-                .environment({
-                    "YT_ALLOW_HTTP_REQUESTS_TO_YT_FROM_JOB": "1",
-                    "YT_PROXY": "http://localhost:80",  # FIXME
-                })
+                .environment(op_env)
             .end_mapper()
             .secure_vault({"YT_TOKEN": self.yt_client.config["token"]})
             .input_table_paths([request.input_table])
             .output_table_paths([request.output_table])
             .job_count(self.runtime_config.worker_num)
-            # .stderr_table_path("//tmp/stderr")  # FIXME
             .max_failed_job_count(1)  # FIXME
         )
 
@@ -152,13 +156,9 @@ class OfflineInferenceOperator:
                     .memory_limit(self.runtime_config.model_worker_resources.mem)
                     .cpu_limit(self.runtime_config.model_worker_resources.cpu)
                     .file_paths(worker_op_params.local_files + worker_op_params.cypress_files)
-                    .environment({
-                        "YT_ALLOW_HTTP_REQUESTS_TO_YT_FROM_JOB": "1",
-                        "YT_PROXY": "http://localhost:80",  # FIXME
-                    })
+                    .environment(op_env)
                 .end_task()
                 .secure_vault({"YT_TOKEN": self.yt_client.config["token"]})
-                .stderr_table_path("//tmp/stderr")  # FIXME
                 .max_failed_job_count(1)  # FIXME
             )
 
