@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.4.0 (2025-02-05)
+
+[Compare the full difference.](https://github.com/dmi-feo/infernosaurus/compare/0.3.0...0.4.0)
+
+### Changes
+
+- Offline: sync via cypress (#5). [a559eb2](https://github.com/dmi-feo/infernosaurus/commit/a559eb2752889f82ef82c57dc7e9110519aa1dd2)
+    
+- Offline: inference params. [b833538](https://github.com/dmi-feo/infernosaurus/commit/b83353843d11757a5893b184e1e9dded3b83f122)
+    
+- Offline: model workers. [9be35c4](https://github.com/dmi-feo/infernosaurus/commit/9be35c4d2e7aba85feaa0a5b34306e52ae9002af)
+    
+
 ## 0.3.0 (2024-10-21)
 
 [Compare the full difference.](https://github.com/dmi-feo/infernosaurus/compare/0.2.0...0.3.0)
