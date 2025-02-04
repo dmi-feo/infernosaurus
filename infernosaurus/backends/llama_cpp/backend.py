@@ -6,64 +6,57 @@ import yt.wrapper as yt
 
 from infernosaurus.inference_backend_base import OnlineInferenceBackendBase, OfflineInferenceBackendBase
 from infernosaurus import models
-from infernosaurus.models import OfflineInferenceRequest
+from infernosaurus.models import LaunchParams
 from infernosaurus.utils import quoted as q
 
 
 class LlamaCppOffline(OfflineInferenceBackendBase):
-    def get_operation_spec(
-            self, request: models.OfflineInferenceRequest, workers_fqdns: list[str]
-    ) -> yt.VanillaSpecBuilder:
-        infer_script_path = os.path.join(
+    def get_main_launch_params(self, request: models.OfflineInferenceRequest) -> LaunchParams:
+        job_script_path = os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
-            "infer.py",
+            "scripts",
+            "main_job.py",
         )
         model_rel_path = "./" + request.model_path.split("/")[-1]
 
         command_parts = [
-            "python3", "./infer.py", "--model-path", q(model_rel_path),
+            "python3", "./main_job.py", "--model-path", q(model_rel_path),
             "--input-column", q(request.input_column), "--output-column", q(request.output_column),
             "--prompt", q(request.prompt), "--echo" if request.echo else "",
             "--inference-params", q(json.dumps(request.inference_parameters.get_params()), qt="'"),
+            "--num-model-workers", str(self.runtime_config.model_worker_num),
+            "--working-dir", request.working_dir,
         ]
-
-        if len(workers_fqdns) > 0:
-            command_parts.extend(["--worker-fqdns", ",".join(workers_fqdns)])
 
         command = " ".join(command_parts)
 
-        op_spec = yt.MapSpecBuilder() \
-            .begin_mapper() \
-                .command(command) \
-                .format(yt.JsonFormat(encode_utf8=False)) \
-                .docker_image("ghcr.io/dmi-feo/llamosaurus:4") \
-                .memory_limit(self.runtime_config.worker_resources.mem) \
-                .cpu_limit(self.runtime_config.worker_resources.cpu) \
-                .file_paths([request.model_path, yt.LocalFile(infer_script_path)]) \
-            .end_mapper() \
-            .input_table_paths([request.input_table]) \
-            .output_table_paths([request.output_table]) \
-            .job_count(self.runtime_config.worker_num) \
-            .stderr_table_path("//tmp/stderr") \
-            .max_failed_job_count(1)
+        return LaunchParams(
+            command=command,
+            local_files=[yt.LocalFile(job_script_path)],
+            cypress_files=[request.model_path],
+            docker_image="ghcr.io/dmi-feo/llamosaurus:4",
+        )
 
-        return op_spec
+    def get_worker_launch_params(self, request: models.OfflineInferenceRequest) -> LaunchParams:
+        job_script_path = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "scripts",
+            "worker_job.py",
+        )
 
-    def get_workers_operation_spec(self, request: OfflineInferenceRequest) -> yt.VanillaSpecBuilder | None:
-        if self.runtime_config.model_worker_num == 0:
-            return None
+        command_parts = [
+            "python3", "./worker_job.py",
+            "--num-model-workers", str(self.runtime_config.model_worker_num),
+            "--working-dir", request.working_dir,
+        ]
+        command = " ".join(command_parts)
 
-        op_spec_builder = yt.VanillaSpecBuilder()
-        return op_spec_builder.begin_task("workers") \
-            .command("/llama/bin/rpc-server --host 0.0.0.0 --port $YT_PORT_0 >&2") \
-            .job_count(self.runtime_config.model_worker_num) \
-            .docker_image("ghcr.io/dmi-feo/llamosaurus:2") \
-            .port_count(1) \
-            .memory_limit(self.runtime_config.model_worker_resources.mem) \
-            .cpu_limit(self.runtime_config.model_worker_resources.cpu) \
-            .end_task() \
-            .stderr_table_path("//tmp/stderr_workers") \
-            .max_failed_job_count(1)
+        return LaunchParams(
+            command=command,
+            local_files=[yt.LocalFile(job_script_path)],
+            cypress_files=[],
+            docker_image="ghcr.io/dmi-feo/llamosaurus:2",
+        )
 
 
 class LlamaCppOnline(OnlineInferenceBackendBase):
