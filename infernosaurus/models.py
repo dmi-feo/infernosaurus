@@ -1,6 +1,9 @@
+import dataclasses
+import uuid
 from typing import Any
 
 import attr
+from yt import wrapper as yt
 
 from infernosaurus import typing as t
 
@@ -74,3 +77,12 @@ class OfflineInferenceRequest:
     prompt: str = attr.ib()
     echo: bool = attr.ib(default=False)
     inference_parameters: InferenceParameters = attr.ib(factory=InferenceParameters)
+    working_dir: str = attr.ib(factory=lambda: f"//tmp/{uuid.uuid4()}")
+
+
+@dataclasses.dataclass
+class LaunchParams:
+    command: str
+    local_files: list[yt.LocalFile]
+    cypress_files: list[str]
+    docker_image: str

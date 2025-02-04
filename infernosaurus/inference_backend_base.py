@@ -1,7 +1,6 @@
 import abc
 
 import attr
-import yt.wrapper as yt
 
 from infernosaurus import models
 
@@ -21,12 +20,12 @@ class OnlineInferenceBackendBase(abc.ABC):
 
 @attr.define
 class OfflineInferenceBackendBase(abc.ABC):
-    runtime_config: models.OfflineInferenceRuntimeConfig = attr.ib()
+    runtime_config: models.OfflineInferenceRuntimeConfig
 
     @abc.abstractmethod
-    def get_workers_operation_spec(self, request: models.OfflineInferenceRequest) -> yt.VanillaSpecBuilder | None:
+    def get_main_launch_params(self, request: models.OfflineInferenceRequest) -> models.LaunchParams:
         pass
 
     @abc.abstractmethod
-    def get_operation_spec(self, request: models.OfflineInferenceRequest, workers_fqdns: list[str]):
+    def get_worker_launch_params(self, request: models.OfflineInferenceRequest) -> models.LaunchParams:
         pass
