@@ -3,6 +3,7 @@ import uuid
 from typing import Any
 
 import attr
+from arrow.api import factory
 from yt import wrapper as yt
 
 from infernosaurus import typing as t
@@ -86,3 +87,4 @@ class LaunchParams:
     local_files: list[yt.LocalFile]
     cypress_files: list[str]
     docker_image: str
+    env_vars: dict[str, str] = dataclasses.field(default_factory=dict)
