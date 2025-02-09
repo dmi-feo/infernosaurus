@@ -6,6 +6,7 @@ import openai
 import yt.wrapper as yt
 
 from infernosaurus.backends.llama_cpp.backend import LlamaCppOnline, LlamaCppOffline
+from infernosaurus.backends.vllm.backend import VLLMOffline
 from infernosaurus.inference_backend_base import OnlineInferenceBackendBase, OfflineInferenceBackendBase
 from infernosaurus.models import (
     OnlineInferenceRuntimeInfo,
@@ -111,6 +112,7 @@ class OfflineInferenceOperator:
 
         self._backend = {
             "llama_cpp": LlamaCppOffline,
+            "vllm": VLLMOffline,
         }[backend_type](runtime_config)
 
     def process(self, request: OfflineInferenceRequest):
@@ -127,13 +129,13 @@ class OfflineInferenceOperator:
         main_op_spec = (
             yt.MapSpecBuilder()
             .begin_mapper()
-                .command(main_op_params.command + " >&2")
+                .command(main_op_params.command)
                 .format(yt.JsonFormat(encode_utf8=False))
                 .docker_image(main_op_params.docker_image)
                 .memory_limit(self.runtime_config.worker_resources.mem)
                 .cpu_limit(self.runtime_config.worker_resources.cpu)
                 .file_paths(main_op_params.local_files + main_op_params.cypress_files)
-                .environment(op_env)
+                .environment({**op_env, **main_op_params.env_vars})
             .end_mapper()
             .secure_vault({"YT_TOKEN": self.yt_client.config["token"]})
             .input_table_paths([request.input_table])
